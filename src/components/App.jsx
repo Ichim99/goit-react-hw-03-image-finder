@@ -1,4 +1,4 @@
-import { Component } from 'react';
+import React, { useState, useEffect } from 'react';
 import './App.css';
 import { fetchImages, PER_PAGE } from './Api/PixabayApi';
 import { Searchbar } from './Searchbar/Searchbar';
@@ -8,115 +8,102 @@ import { Loader } from './Loader/Loader';
 import { Modal } from './Modal/Modal';
 import { toast } from 'react-toastify';
 
-export class App extends Component {
-  state = {
-    query: '',
-    page: 1,
-    images: [],
-    loading: false,
-    error: null,
-    showModal: false,
-    largeImage: '',
-    currentImgPerPage: null,
+export const App = () => {
+  const [query, setQuery] = useState('');
+  const [page, setPage] = useState(1);
+  const [images, setImages] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [showModal, setShowModal] = useState(false);
+  const [largeImage, setLargeImage] = useState('');
+  const [currentImgPerPage, setCurrentImgPerPage] = useState(null);
+
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (event.keyCode === 27) {
+        setShowModal(false);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [showModal]);
+
+  useEffect(() => {
+    getImagesData();
+  }, [query, page]);
+
+  const handleFormSubmit = (query) => {
+    setQuery(query);
+    setPage(1);
+    setImages([]);
   };
 
-  componentDidUpdate(_, prevState) {
-    const prevQuery = prevState.query;
-    const nextQuery = this.state.query;
-    if (prevQuery !== nextQuery) {
-      this.getImagesData();
-    }
-
-    if (this.state.page > 2) {
-      window.scrollTo({
-        top: document.documentElement.scrollHeight,
-        behavior: 'smooth',
-      });
-    }
-  }
-
-  handleFormSubmit = query => {
-    this.setState(() => {
-      return { query: query, page: 1, images: [] };
-    });
+  const handleLoadMoreImg = () => {
+    getImagesData();
   };
 
-  handleLoadMoreImg = () => {
-    this.getImagesData();
-  };
-
-  getImagesData = async () => {
+  const getImagesData = async () => {
     try {
-      this.setState({ loading: true });
-      const { hits, totalHits } = await fetchImages(
-        this.state.page,
-        this.state.query
-      );
+      setLoading(true);
+      const { hits, totalHits } = await fetchImages(page, query);
       if (totalHits === 0) {
         toast.error('Images not found ...');
-        this.setState({ loading: false, currentImgPerPage: null });
+        setLoading(false);
+        setCurrentImgPerPage(null);
         return;
       }
-
-      const images = this.imagesArray(hits);
-
-      this.setState(prevState => {
-        return {
-          images: [...prevState.images, ...images],
-          currentImgPerPage: hits.length,
-          page: prevState.page + 1,
-        };
-      });
+      const newImages = hits.map(({ id, largeImageURL, tags, webformatURL }) => ({
+        id,
+        largeImageURL,
+        tags,
+        webformatURL,
+      }));
+      setImages((prevImages) => [...prevImages, ...newImages]);
+      setCurrentImgPerPage(hits.length);
+      setPage((prevPage) => prevPage + 1);
     } catch (error) {
       console.log(error);
-      this.setState({ error: error.message });
+      setError(error.message);
     } finally {
-      this.setState({ loading: false });
+      setLoading(false);
     }
   };
 
-  imagesArray = data => {
-    return data.map(({ id, largeImageURL, tags, webformatURL }) => {
-      return { id, largeImageURL, tags, webformatURL };
-    });
+  const toggleModal = () => {
+    setShowModal((prevShowModal) => !prevShowModal);
   };
 
-  toggleModal = () => {
-    this.setState(({ showModal }) => ({
-      showModal: !showModal,
-    }));
-  };
-  openModal = largeImage => {
-    this.setState({ largeImage }, () => {
-      this.toggleModal();
-    });
+  const openModal = (largeImage) => {
+    setLargeImage(largeImage);
+    toggleModal();
   };
 
-  render() {
-    const { images, loading, currentImgPerPage, error, showModal, largeImage } =
-      this.state;
-    return (
-      <div className="App">
-        <Searchbar onSubmit={this.handleFormSubmit} />
-        {images.length > 0 && !error && (
-          <>
-            <ImageGallery images={images} onClick={this.openModal} />
-            {currentImgPerPage && currentImgPerPage < PER_PAGE && (
-              <p className="Message">No more pictures</p>
-            )}
-          </>
-        )}
-        {showModal && (
-          <Modal onClose={this.toggleModal}>
-            <img src={largeImage} alt="" />
-          </Modal>
-        )}
-        {currentImgPerPage === PER_PAGE && !loading && (
-          <Button onClick={this.handleLoadMoreImg} />
-        )}
-        {loading && <Loader />}
-      </div>
-    );
-  }
-}
-  
+  return (
+    <div className="App">
+      <Searchbar onSubmit={handleFormSubmit} />
+      {images.length > 0 && !error && (
+        <>
+          <ImageGallery images={images} onClick={openModal} />
+          {currentImgPerPage && currentImgPerPage < PER_PAGE && (
+            <p className="Message">No more pictures</p>
+          )}
+        </>
+      )}
+      {showModal && (
+        <Modal onClose={toggleModal}>
+          <img src={largeImage} alt="" />
+        </Modal>
+      )}
+      {currentImgPerPage === PER_PAGE && !loading && (
+        <Button onClick={handleLoadMoreImg} />
+      )}
+      {loading && <Loader />}
+    </div>
+  );
+};
+
+
