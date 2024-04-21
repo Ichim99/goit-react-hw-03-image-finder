@@ -2,7 +2,7 @@ import propTypes from 'prop-types';
 import { ImageGalleryItem } from '../ImageGalleryItem/ImageGalleryItem';
 import style from './ImageGallery.module.css';
 
-export const ImageGallery = ({ images, onClick }) => {
+export const ImageGallery = ({ images, onClickImage }) => {
   return (
     <div>
       <ul className={style.ImageGallery}>
@@ -10,10 +10,10 @@ export const ImageGallery = ({ images, onClick }) => {
           return (
             <ImageGalleryItem
               key={id}
-              largeImage={largeImageURL}
+              largeImageURL={largeImageURL} 
               tags={tags}
-              preview={webformatURL}
-              onClick={onClick}
+              webformatURL={webformatURL} 
+              onClickImage={onClickImage}
             />
           );
         })}
@@ -28,8 +28,8 @@ ImageGallery.propTypes = {
       id: propTypes.number.isRequired,
       webformatURL: propTypes.string.isRequired,
       tags: propTypes.string.isRequired,
-      largeImageURL: propTypes.string,
+      largeImageURL: propTypes.string, 
     })
   ).isRequired,
-  onClick: propTypes.func,
+  onClickImage: propTypes.func,
 };
