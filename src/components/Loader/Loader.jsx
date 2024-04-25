@@ -4,14 +4,14 @@ import  style  from './Loader.module.css';
 
 export const Loader = () => {
   return (
-    <div>
+    <div className={style.loader}>
       <ColorRing
         visible={true}
         height={80}
         width={80}
         ariaLabel="blocks-loading"
         className={style.blocks_wrapper}
-        color="#f8d703" 
+        color="#000" 
       />
     </div>
   );
